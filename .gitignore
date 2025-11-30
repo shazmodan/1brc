@@ -18,3 +18,4 @@ BenchmarkDotNet.Bin/
 !/bin
 /bin/configlet
 msbuild.log
+input_1million.txt
