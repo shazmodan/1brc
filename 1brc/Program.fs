@@ -4,6 +4,7 @@
 // and the result values per station in the format <min>/<mean>/<max>, rounded to one fractional digit):
 
 open System
+open System.IO
 open System.Collections.Generic
 
 type Station = string
@@ -20,9 +21,6 @@ let printResult(dict: Dictionary<string, Min * Mean * Max * Count>) =
         let (min, mean, max, _) = keyValue.Value
         printfn $"%s{keyValue.Key};%.1f{min};%.1f{Math.Round(mean, 1)};%.1f{max}")
 
-//TODO: Check if struct(min, mean, max) instead of normal tuples (allocated on stack instead) is faster.
-// let a = (1, "hej")          // System.Tuple<int,string>, heap
-// let b = struct (1, "hej")   // System.ValueTuple<int,string>, stack (usually)
 let parseLine (line: string) : Station * Temperature  =
     let semiColonIndex = line.IndexOf ';'
     line.Substring(0, semiColonIndex), line.Substring(semiColonIndex + 1) |> float
@@ -44,16 +42,16 @@ let addLineToDict (resultDict: Dictionary<string, Min * Mean * Max * Count>) (li
         resultDict.[station] <- (newMin, newMean, newMax, newCount)
         resultDict
 
-//TODO: Prob not readalllines, one a time is best
 let parse (path: string) : Dictionary<string, Min * Mean * Max * Count> =
-    // let initMap : Map<string, Min * Mean * Max * Count> = Map.empty
     let initDict : Dictionary<string, Min * Mean * Max * Count> = Dictionary()
-    
-    let lines: string array = System.IO.File.ReadAllLines path
 
-    (initDict, lines)
-    ||> Array.fold (fun accMap line -> addLineToDict accMap line)
+    use streamReader = new StreamReader(path)
+    let mutable line = streamReader.ReadLine()
+    while line <> null do
+        addLineToDict initDict line |> ignore
+        line <- streamReader.ReadLine()
 
+    initDict
 
 [<EntryPoint>]
 let main args =
@@ -75,3 +73,4 @@ let main args =
 
 // Initial time: 1559.331800ms
 // Using Dictionary instead of Map: 1158.244300ms
+// Using StreamReader instead of ReadAllLines: 1072.352500ms
