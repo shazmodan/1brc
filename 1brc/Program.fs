@@ -4,6 +4,7 @@
 // and the result values per station in the format <min>/<mean>/<max>, rounded to one fractional digit):
 
 open System
+open System.Collections.Generic
 
 type Station = string
 type Min = float
@@ -12,11 +13,12 @@ type Mean = float
 type Max = float
 type Temperature = float
 
-let printResult(map: Map<string, Min * Mean * Max * Count>) =
-    map
-    |> Map.iter (fun station (min, mean, max, _) -> 
-        printfn $"%s{station};%.1f{min};%.1f{Math.Round(mean, 1)};%.1f{max}")
-
+let printResult(dict: Dictionary<string, Min * Mean * Max * Count>) =
+    dict
+    |> Seq.sortBy (fun keyValue -> keyValue.Key)
+    |> Seq.iter(fun (keyValue) ->
+        let (min, mean, max, _) = keyValue.Value
+        printfn $"%s{keyValue.Key};%.1f{min};%.1f{Math.Round(mean, 1)};%.1f{max}")
 
 //TODO: Check if struct(min, mean, max) instead of normal tuples (allocated on stack instead) is faster.
 // let a = (1, "hej")          // System.Tuple<int,string>, heap
@@ -25,30 +27,31 @@ let parseLine (line: string) : Station * Temperature  =
     let semiColonIndex = line.IndexOf ';'
     line.Substring(0, semiColonIndex), line.Substring(semiColonIndex + 1) |> float
 
-let addLineToDict (resultMap: Map<string, Min * Mean * Max * Count>) (line: string) =
+let addLineToDict (resultDict: Dictionary<string, Min * Mean * Max * Count>) (line: string) : Dictionary<string, Min * Mean * Max * Count> =
     let station, newTemperature = parseLine line
 
-    let existingValuesOpt = resultMap.TryFind station
-
-    match existingValuesOpt with
-    | None -> 
-        resultMap 
-        |> Map.add station (newTemperature, newTemperature, newTemperature, 1.0)
-    | Some (existingMin, existingMean, existingMax, existingCount) ->
+    match resultDict.ContainsKey station with
+    | false -> 
+        resultDict.[station] <- (newTemperature, newTemperature, newTemperature, 1.0)
+        resultDict
+    | true -> 
+        let (existingMin, existingMean, existingMax, existingCount) = resultDict.[station]
         let newCount = existingCount + 1.0
         let newMin = min existingMin newTemperature
         let newMax = max existingMax newTemperature
         let newMean = (existingMean + newTemperature) / newCount
 
-        resultMap |> Map.add station (newMin, newMean, newMax, newCount)
+        resultDict.[station] <- (newMin, newMean, newMax, newCount)
+        resultDict
 
 //TODO: Prob not readalllines, one a time is best
-let parse (path: string) : Map<string, Min * Mean * Max * Count> =
-    let initMap : Map<string, Min * Mean * Max * Count> = Map.empty
+let parse (path: string) : Dictionary<string, Min * Mean * Max * Count> =
+    // let initMap : Map<string, Min * Mean * Max * Count> = Map.empty
+    let initDict : Dictionary<string, Min * Mean * Max * Count> = Dictionary()
     
     let lines: string array = System.IO.File.ReadAllLines path
 
-    (initMap, lines)
+    (initDict, lines)
     ||> Array.fold (fun accMap line -> addLineToDict accMap line)
 
 
@@ -61,13 +64,14 @@ let main args =
         1
     else
         let path: string = args[0]
-        let resultMap = parse path
+        let resultDict = parse path
 
-        printResult resultMap
+        printResult resultDict
 
         stopWatch.Stop()
         printfn "%fms" stopWatch.Elapsed.TotalMilliseconds
 
         0
 
-// Current record 1 million: 1559.331800ms
+// Initial time: 1559.331800ms
+// Using Dictionary instead of Map: 1158.244300ms

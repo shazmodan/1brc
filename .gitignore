@@ -19,3 +19,5 @@ BenchmarkDotNet.Bin/
 /bin/configlet
 msbuild.log
 input_1million.txt
+*.nettrace
+*.speedscope.json

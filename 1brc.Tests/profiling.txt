@@ -1,4 +1,6 @@
-dotnet-trace collect --duration 00:00:10 -- bin/Release/net8.0/osx-x64/publish/1brc measurements.txt
+dotnet tool install --global dotnet-trace
+
+dotnet-trace collect --duration 00:00:10 -- bin\Release\net10.0\1brc.exe ..\1brc.Tests\input_1million.txt
 dotnet-trace convert 1brc_yyyymmdd_hhmmss.nettrace --format Speedscope
 
 Drag the resulting json file on to https://www.speedscope.app/
