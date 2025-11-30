@@ -54,6 +54,8 @@ let parse (path: string) : Map<string, Min * Mean * Max * Count> =
 
 [<EntryPoint>]
 let main args =
+    let stopWatch = System.Diagnostics.Stopwatch.StartNew()
+
     if args.Length = 0 then
         printfn "Missing file path"
         1
@@ -63,4 +65,9 @@ let main args =
 
         printResult resultMap
 
+        stopWatch.Stop()
+        printfn "%fms" stopWatch.Elapsed.TotalMilliseconds
+
         0
+
+// Current record 1 million: 1559.331800ms
